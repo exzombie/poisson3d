@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">  
+  <title>Solving the Poisson equation on a triclinic lattice</title>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+    TeX: {
+      equationNumbers: { autoNumber: "AMS" },
+      Macros: {
+        ph: "\\varphi",
+        eps: "\\varepsilon",
+        m: "\\mathbf",
+        pd: "\\partial",
+        pdf: ["\\frac{\\partial #1}{\\partial #2}", 2],
+        ii: "\\mathrm{i}",
+        ee: "\\mathrm{e}"
+      }
+    },
+    "HTML-CSS": {
+      scale: 80
+    }
+    });
+  </script>
+  <script type="text/javascript"
+	  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+
+  <link href='http://fonts.googleapis.com/css?family=Quattrocento|Open+Sans:400,600&subset=latin,latin-ext' rel='stylesheet' type='text/css'>
+  <style>
+    body {
+    background-color: white;
+    color: black;
+    font-family: 'Quattrocento', serif;
+    font-size: 100%;
+    }
+    h1, h2, h3 {
+    font-family: 'Open Sans', sans-serif;
+    }
+  </style>
+</head>
+<body>
+<h1>Solving the Poisson equation on a triclinic lattice</h1>
+<address>
+<a href="mailto:jure.varlec@ki.si">Jure Varlec</a>
+</address>
+<p>
+  We are solving the Poisson equation, defined as
+
+  \begin{equation} \nabla^2 \ph = \rho , \end{equation}
+
+  on a 3-dimensional domain with periodic boundary conditions but a
+  non-orthogonal coordinate system. The domain thus has the shape of a
+  parallelepiped and is a unit cell of a periodic lattice. Both
+  \(\rho\) and \(\ph\) are continuous scalar fields. The solution
+  presented here is thus a solution of the problem of finding the
+  electrostatic potential corresponding to a continuous charge
+  distribution in a crystal. In principle, this method also solves the
+  problem for point charges where \(\rho = \sum_i \delta (\vec{r} -
+  \vec{r}_i)\), however, because domain discretization is employed, a
+  very fine grid is required to obtain acceptable precision. It is
+  thus recommended to use a different method for point charges, such
+  as Ewald summation.
+</p>
+
+<h2>Non-orthogonal coordinates</h2>
+<p>
+  Let \(\m{B}\) be a \(3 \times 3\) matrix whose rows are the
+  right-handed basis vectors defining our domain, i.e. they represent
+  the edges of the parallelepiped. We then obtain the Cartesian
+  coordinates of a point represented by a column-vector \(\m{r}\) from
+  the vector of its fractional coordinates \(\m{f}\) as
+
+  \begin{equation} \m{r} = \m{B}^T \m{f} \end{equation}
+
+  where \(\m{B}^T\) is the transposed matrix. Similarly,
+
+  \begin{equation}
+    \m{f} = {\m{B}^T}^{-1} \m{r} = \m{Mr},
+  \end{equation}
+
+  where we introduced the shorthand \(\m{M}\) for the inverted
+  matrix. Fractional coordinates (also called crystal coordinates)
+  have values between 0 and 1 for points inside the domain.
+</p>
+
+<p>
+  We assume \(\rho\) and \(\ph\) are defined in terms of fractional
+  coordinates, which is the case when they are given as a set of
+  values on a discrete grid, as is the case e.g. with charge
+  distributions computed with quantum chemistry software. This means
+  that \(\ph = \ph(\m{f}) = \ph(\m{Mr})\). Let us now derive the form
+  that operator \(\nabla^2 = \sum_i \pd^2 / \pd r_i^2\) takes in this
+  case. We begin by writing down the first derivative, using the
+  Einstein summation rules:
+
+  \begin{equation}
+    \pdf{\ph}{r_i} = \pdf{\ph}{f_j} \pdf{f_j}{r_i} = \pdf{\ph}{f_j} M_{ji}
+  \end{equation}
+
+  arriving at
+
+  \begin{equation}
+    \nabla \ph = \m{B}^{-1} \pdf{\ph}{\m{f}}
+  \end{equation}
+
+  since \(f_i = M_{ij} r_j\). Taking the second derivative over the
+  same coordinate as the first, we obtain
+
+  \begin{equation}
+    \pdf{}{r_i} \pdf{\ph}{r_i} = M_{ji}\pdf{^2\ph}{f_k \pd f_j} M_{ki}
+    \label{eq:thepoisson}
+  \end{equation}
+
+  or, in matrix notation,
+
+  \begin{equation}
+    \nabla^2 \ph =
+    \mathrm{tr} \left( \m{MM}^T\pdf{^2\ph}{\m{f}\pd\m{f}} \right)
+  \end{equation}
+
+  where \(\mathrm{tr}\) stands for the trace operator.
+</p>
+
+<h2>Solving on a regular grid</h2>
+<p>
+  A simple and well known way to solve the Poisson equation on a
+  domain with straight boundaries in Cartesian coordinates is a direct
+  solution in Fourier space where the differential equation becomes a
+  simple per-point division of the transformed \(\rho\) by a phase
+  term. As it turns out, a triclinic domain is amenable to the same
+  treatment, albeit with a more complicated form of the phase term.
+</p>
+<p>
+  Let the domain be discretized as a regular grid. Denoting the basis
+  vectors (i.e. rows of the matrix \(\m{B}\)) as \(\m{a}_1\),
+  \(\m{a}_2\) and \(\m{a}_3\), the Cartesian coordinates of a grid
+  location are
+
+  \begin{equation}
+    \m{r}_{u, v, w} = \frac{u}{N_1} \m{a}_1
+      + \frac{v}{N_2} \m{a}_2
+      + \frac{w}{N_3} \m{a}_3
+      = \m{B}^T \m{f}_{u,v,w}
+  \label{eq:r}
+  \end{equation}
+
+  with \(u\), \(v\) and \(w\) being indices into the 3-dimensional
+  array containing the values of a scalar field and \(N_1\), \(N_2\)
+  and \(N_3\) being the number of grid points in each dimension. Each
+  coefficient like \(u / N_1\) thus represents the discrete fractional
+  coordinates of the grid point.
+
+  We now replace the derivatives of the previous section with finite
+  differences on a grid. In order to avoid complicating the
+  expressions too much, we only consider derivatives over specific
+  coordinates; it is easy to generalize from there. The first
+  derivative over fractional coordinates in the direction of
+  \(\m{a}_1\) is then
+
+  \begin{equation}
+    \pdf{\ph_{u,v,w}}{f_1} \to \frac{\ph_{u+1,v,w}
+      - \ph_{u-1,v,w}}{2h_1}, \quad
+      h_1 = \frac{1}{N_1},
+  \end{equation}
+
+  using the central difference which is symmetric and has higher order
+  than left or right differences. From now on, we elide indices that
+  are not significant in a particular expression, e.g. \(\ph_{u+1,v,w}
+  \to \ph_{u+1}\) in the expression above. The second derivative in
+  directions \(\m{a}_1\) and \(\m{a}_2\) becomes
+
+  \begin{equation}
+    \pdf{^2 \ph_{u,v}}{f_1\pd f_2} \to
+      \frac{1}{4h_1h_2}\left[
+      \ph_{u+1,v+1} + \ph_{u-1,v-1} - \ph_{u+1, v-1} - \ph_{u-1,v+1}
+      \right]
+  \label{eq:nondiagonal}
+  \end{equation}
+
+  This expression is different from the one obtained when both
+  directions are the same, which is
+
+  \begin{equation}
+    \pdf{^2 \ph_{u}}{^2 f_1} \to
+      \frac{1}{h_1^2}\left[
+      \ph_{u+1} + \ph_{u-1} - 2\ph_u
+    \right].
+  \label{eq:simpleex}
+  \end{equation}
+
+  The operator \(\nabla^2\) now being defined as a finite difference
+  operator, equation \eqref{eq:thepoisson} becomes a system of coupled
+  linear equations.
+</p>
+
+<p>
+  These equations can be decoupled by introducing the Fourier
+  expansion of scalar fields:
+
+  \begin{equation}
+    \ph_{u,v,w} = \sum\limits_{U,V,W} \Phi_{U,V,W}
+      e^{-2\pi\ii Uu/N_1} e^{-2\pi\ii Vv/N_2} \ee^{-2\pi\ii Ww/N_3}
+  \label{eq:expansion}
+  \end{equation}
+
+  where each Fourier component is defined as
+
+  \begin{equation}
+  \Phi_{U,V,W} = \frac{1}{N_1N_2N_3} \sum\limits_{u,v,w} \ph_{u,v,w} 
+      e^{2\pi\ii Uu/N_1} e^{2\pi\ii Vv/N_2} \ee^{2\pi\ii Ww/N_3}.
+  \end{equation}
+
+  This expression can be efficiently computed using a Fast Fourier
+  Transform algorithm. Substituting expansion \eqref{eq:expansion}
+  into, for example, the right side of equation \eqref{eq:simpleex},
+  yields
+
+  \begin{equation}
+  \pdf{^2 \ph_{u}}{^2 f_1} \to
+  \frac{1}{h_1^2} \sum\limits_{U,V,W} \Phi_{U,V,W}
+  e^{-2\pi\ii Uu/N_1} e^{-2\pi\ii Vv/N_2} \ee^{-2\pi\ii Ww/N_3}
+  \left(
+  \ee^{-2\pi\ii U/N_1} + \ee^{+2\pi\ii U/N_1} - 2
+  \right).
+  \label{eq:simpleexf}
+  \end{equation}
+
+  It is now evident that the equations become decoupled in reciprocal
+  space since each Fourier component is independently multiplied by
+  the phase factor in parentheses. However, the notation used is
+  cumbersome. Instead, we introduce reciprocal lattice vectors
+
+  \begin{equation}
+    \m{k}_i = 2\pi\frac{\m{a}_j \times
+      \m{a}_k}{(\m{a}_1,\m{a}_2,\m{a}_3)}, \\
+      \m{K}_{U,V,W} = U\m{k}_1 + V\m{k}_2 + W\m{k}_3
+  \end{equation}
+
+  for cyclical permutations of indices \((i,j,k)\), wherein equation
+  \eqref{eq:expansion} becomes
+
+  \begin{equation}
+    \ph_{u,v,w} = \sum\limits_{U,V,W}\Phi_{U,V,W}
+      \ee^{-\ii \m{r}_{u,v,w} \cdot \m{K}_{U,V,W}}
+  \end{equation}
+
+  since reciprocal lattice vectors have the property \(\m{k}_i \cdot
+  \m{a}_j = 2\pi\delta_{ij}\). Using a shorthand \(\tilde{\m{a}}_i =
+  \m{a}_i / N_i\), equation \eqref{eq:simpleexf} can now be written in
+  a more general form
+
+  \begin{equation}
+  \pdf{^2 \ph_{u}}{^2 f_1} \to
+  \frac{1}{h_1^2} \sum\limits_{U,V,W} \Phi_{U,V,W}
+  \ee^{-\ii \m{r}_{u,v,w} \cdot \m{K}_{U,V,W}}
+  \left(
+  \ee^{-\ii \tilde{\m{a}}_i \cdot K_{U,V,W}}
+  + \ee^{\ii \tilde{\m{a}}_i \cdot K_{U,V,W}}
+  - 2
+  \right)
+  \end{equation}
+
+  and similarly for equation \eqref{eq:nondiagonal}. To join both
+  expressions, we define a factor
+
+  \begin{equation}
+  P^{i,j}_{U,V,W} = \left\{
+  \begin{array}{lr}
+  N_i^2
+  \left(\ 
+  \ee^{-\ii \tilde{\m{a}}_i \cdot K_{U,V,W}}
+  + \ee^{\ii \tilde{\m{a}}_i \cdot K_{U,V,W}}
+  - 2
+  \ \right)
+  & ; i = j \\
+
+  \frac{N_i N_j}{4}
+  \left(\ 
+  \ee^{-\ii (\tilde{\m{a}}_i + \tilde{\m{a}}_j) \cdot K_{U,V,W}}
+  + \ee^{\ii (\tilde{\m{a}}_i + \tilde{\m{a}}_j) \cdot K_{U,V,W}}
+  - \ee^{-\ii (\tilde{\m{a}}_i - \tilde{\m{a}}_j) \cdot K_{U,V,W}}
+  - \ee^{\ii (\tilde{\m{a}}_i - \tilde{\m{a}}_j) \cdot K_{U,V,W}}
+  \ \right)
+  & ; i \ne j
+  \end{array}
+  \right.
+  \end{equation}
+
+  This can be simplified further, yielding
+
+  \begin{equation}
+  P^{i,j}_{U,V,W} = \left\{
+  \begin{array}{lr}
+  2 N_i^2 \left( \cos \left[\tilde{\m{a}}_i \cdot \m{K}_{U,V,W} \right] - 1 \right)
+  & ; i = j \\
+
+  \frac{N_i N_j}{2}
+  \left(
+  \cos \left[\left(\tilde{\m{a}}_i + \tilde{\m{a}}_j \right) \cdot \m{K}_{U,V,W} \right]
+  - \cos \left[\left(\tilde{\m{a}}_i - \tilde{\m{a}}_j \right) \cdot \m{K}_{U,V,W} \right]
+  \right)
+  & ; i \ne j
+  \end{array}
+  \right.
+  \end{equation}  
+
+  The transformed equation \eqref{eq:thepoisson} is then, using again
+  Einstein summation rules,
+
+  \begin{equation}
+  \Phi_{U,V,W} M_{ji} M_{ki} P^{k,j}_{U,V,W} = \xi_{U,V,W}
+  \end{equation}
+
+  with \(\xi\) being the Fourier transform of \(\rho\). This set of
+  equations can be solved simply by dividing each of the values of
+  \(\xi\) with the corresponding factor.
+
+</p>
+<p>
+  An exception must be made for the zero-frequency component
+  \(\xi_{0,0,0}\) since the corresponding phase factor is zero which
+  blows up the solution. Thus, \(\Phi_{0,0,0}\) must explicitly be set
+  to zero or, alternatively, an arbitrary finite value. There are
+  physical reasons for this. Considering the example of
+  electrostatics, the electrostatic potential is only defined up to an
+  additive constant, meaning that its average value over the domain
+  (corresponding to the zero-frequency component) is
+  arbitrary. Secondly, the net charge (sum of \(\rho\)) must be zero
+  because the system is periodic and infinite. If this is not so,
+  setting \(\xi_{0,0,0}\) to zero simply subtracts the average,
+  embedding the charged system in a constant oppositely charged
+  background, which is as much as can be done.
+</p>
+</body>
+</html>
