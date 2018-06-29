@@ -57,7 +57,7 @@ class Poisson3D:
         if basis.dtype != np.float:
             raise ValueError('basis data type is not float.')
 
-        self._basis = basis.copy()
+        self._basis = basis.copy(order='C')
         if domain_shape is not None:
             if len(domain_shape) != 3:
                 raise ValueError('domain is not 3-dimensional.')
@@ -81,15 +81,15 @@ class Poisson3D:
             raise ValueError('rhs data type is not float.')
 
         if self._shape is None:
-            self._shape = np.asarray(rhs.shape, dtype=np.uint32)
+            self._shape = np.asarray(rhs.shape, dtype=np.uint32, order='C')
             self._check = rhs.shape[:]
 
         if self._check != rhs.shape:
             raise ValueError('rhs shape does not match this solver\'s domain.')
 
-        copy = rhs.copy()
+        copy = rhs.copy(order='C')
         if self._phase is None:
-            self._phase = np.ndarray(rhs.shape, dtype=np.float_)
+            self._phase = np.ndarray(rhs.shape, dtype=np.float_, order='C')
             Poisson3D._impl.poisson3d(
                 self._shape.ctypes.data_as(ct.POINTER(ct.c_uint32)),
                 copy.ctypes.data_as(ct.POINTER(ct.c_double)),
