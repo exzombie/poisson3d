@@ -13,6 +13,7 @@ import pymatgen as mg
 from numpy import pi, sqrt, log
 from math import erfc
 from scipy.constants import e as ELECTRON_CHARGE, epsilon_0 as EPSILON_0
+import poisson3d.support as support
 
 
 class Poisson3D:
@@ -89,16 +90,9 @@ class Poisson3D:
         copy = rhs.copy(order='C')
         if self._phase is None:
             self._phase = np.ndarray(rhs.shape, dtype=np.float_, order='C')
-            Poisson3D._impl.poisson3d(
-                self._shape.ctypes.data_as(ct.POINTER(ct.c_uint32)),
-                copy.ctypes.data_as(ct.POINTER(ct.c_double)),
-                self._basis.ctypes.data_as(ct.POINTER(ct.c_double)),
-                self._phase.ctypes.data_as(ct.POINTER(ct.c_double)))
+            support.poisson3d(self._basis, copy, self._phase)
         else:
-            Poisson3D._impl.poisson3d_precomputed(
-                self._shape.ctypes.data_as(ct.POINTER(ct.c_uint32)),
-                copy.ctypes.data_as(ct.POINTER(ct.c_double)),
-                self._phase.ctypes.data_as(ct.POINTER(ct.c_double)))
+            support.poisson3d_precomputed(copy, self._phase)
         return copy
 
     def apply(self, lhs):
@@ -117,30 +111,6 @@ class Poisson3D:
         rhs = self.solve(lhs)
         self._phase, self._invphase = self._invphase, self._phase
         return rhs
-
-    def _getImplementation():
-        mypath = dirname(abspath(inspect.getfile(inspect.currentframe())))
-        impl = mypath + '/poisson3d.so'
-        source = mypath + '/poisson3d.cpp'
-        sourcestat = stat(source)
-        try:
-            implstat = stat(impl)
-        except:
-            class Object:
-                pass
-            implstat = Object()
-            implstat.st_mtime = 0
-        if sourcestat.st_mtime >= implstat.st_mtime:
-            cflags = '--std=c++11 -ggdb -Wall -Wextra -fPIC -shared'.split()
-            optim = '-O2 -march=native'.split()
-            define = ['-DNDEBUG']
-            ldflags = ['-lfftw3']
-            cmd = ['c++'] + cflags + optim + define + ldflags + \
-                  ['-o', impl, source]
-            check_call(cmd)
-        return ct.cdll.LoadLibrary(impl)
-
-    _impl = _getImplementation()
 
 
 class EwaldField(object):

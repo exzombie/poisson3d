@@ -1,3 +1,6 @@
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include <Python.h>
+#include <numpy/arrayobject.h>
 #include <complex>
 #include <vector>
 #include <array>
@@ -218,24 +221,39 @@ static RealData poisson3d(const RealData& rhs, const Mat& basis,
     return reald;
 }
 
-extern "C" void poisson3d(uint32_t* shape, double* data, double* basis,
-			 double* phase_factors)
+
+// Python wrappers, they define a module named "support".
+
+static PyObject* poisson3d_wrapper(PyObject* self, PyObject* args)
 {
-    RealData rhs(shape[0], shape[1], shape[2], data);
+    PyArrayObject *basis, *in, *phase;
+    if (!PyArg_ParseTuple(args, "OOO", &basis, &in, &phase)) {
+        return NULL;
+    };
+
     Mat B;
     for (uint j = 0; j < 3; ++j) {
 	for (uint i = 0; i < 3; ++i) {
-	    B(i, j) = basis[3*i + j];
+          B(i, j) = *(double*)PyArray_GETPTR2(basis, i, j);
 	}
     }
 
-    RealData C = poisson3d(rhs, B, phase_factors);
-    memcpy(data, C.data(), sizeof(double) * rhs.elements());
+    npy_intp* shape = PyArray_DIMS(in);
+    RealData rhs(shape[0], shape[1], shape[2], (double*)PyArray_DATA(in));
+    RealData C = poisson3d(rhs, B, (double*)PyArray_DATA(phase));
+
+    memcpy(PyArray_DATA(in), C.data(), sizeof(double) * rhs.elements());
+    return Py_None;
 }
 
-extern "C" void poisson3d_precomputed(uint32_t* shape, double* data,
-				     double* phase_factors)
+static PyObject* poisson3d_precomputed(PyObject* self, PyObject* args)
 {
+    PyArrayObject *in, *phase;
+    if (!PyArg_ParseTuple(args, "OO", &in, &phase)) {
+        return NULL;
+    };
+
+    npy_intp* shape = PyArray_DIMS(in);
     uint N = shape[0] * shape[1] * shape[2];
     uint Nc = shape[0] * shape[1] * (shape[2] / 2 + 1);
     double*  reald = (double*)fftw_malloc(N * sizeof(double));
@@ -252,23 +270,43 @@ extern "C" void poisson3d_precomputed(uint32_t* shape, double* data,
 			     reinterpret_cast<double*>(reald),
 			     FFTW_MEASURE);
 
-    memcpy(reald, data, sizeof(double) * N);
+    memcpy(reald, PyArray_DATA(in), sizeof(double) * N);
 
     const complex n = (complex)N;
     fftw_execute(planA);
-    for (uint i = 1; i < Nc; ++i)
-	xform[i] /= n * phase_factors[i];
+    for (uint i = 1; i < Nc; ++i) {
+        xform[i] /= n * ((double*)PyArray_DATA(phase))[i];
+    }
     xform[0] = 0.0;
     fftw_execute(planB);
 
     fftw_destroy_plan(planA);
     fftw_destroy_plan(planB);
 
-    memcpy(data, reald, sizeof(double) * N);
+    memcpy(PyArray_DATA(in), reald, sizeof(double) * N);
 
     fftw_free(reald);
     fftw_free(xform);
+
+    return Py_None;
 }
+
+static PyMethodDef methods[] = {
+    {"poisson3d", poisson3d_wrapper, METH_VARARGS,
+        "Wrapper for poisson3d solver."},
+    {"poisson3d_precomputed", poisson3d_precomputed, METH_VARARGS,
+        "Wrapper for poisson3d solver with precomputed factors."},
+    {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef module = {PyModuleDef_HEAD_INIT, "support",
+                                    NULL, -1, methods};
+
+PyMODINIT_FUNC PyInit_support()
+{
+    return PyModule_Create(&module);
+}
+
 
 #ifdef TESTBUILD
 
