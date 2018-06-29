@@ -218,12 +218,12 @@ class EwaldField(object):
         rcp_latt = self._s.lattice.reciprocal_lattice
         recip_nn = rcp_latt.get_points_in_sphere([[0, 0, 0]], [0, 0, 0],
                                                  self._gmax)
-        recip_nn = [x for x in recip_nn if x[1] != 0]
+        recip_nn = [x[0] for x in recip_nn if x[1] != 0]
         frac_to_cart = rcp_latt.get_cartesian_coords
         self._gvects = np.zeros((len(recip_nn), 3))
         self._gvectdots = np.zeros((len(recip_nn), len(coords)))
         self._gsquares = np.zeros((len(recip_nn),))
-        for i, (fcoords, dist, _) in enumerate(recip_nn):
+        for i, fcoords in enumerate(recip_nn):
             gvect = frac_to_cart(fcoords)
             self._gvects[i] = gvect
             self._gvectdots[i] = np.sum(gvect[None, :] * coords, 1)
