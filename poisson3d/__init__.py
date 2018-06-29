@@ -12,7 +12,7 @@ import inspect
 import pymatgen as mg
 from numpy import pi, sqrt, log
 from math import erfc
-from pymatgen.core.physical_constants import ELECTRON_CHARGE, EPSILON_0
+from scipy.constants import e as ELECTRON_CHARGE, epsilon_0 as EPSILON_0
 from numba import jit, float64, int64
 
 

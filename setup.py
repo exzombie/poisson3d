@@ -11,6 +11,6 @@ lib = Extension('poisson3d.support',
 setup(name='poisson3d',
       version='1.0.0',
       packages=['poisson3d'],
-      install_requires=['numpy', 'pymatgen', 'numba'],
+      install_requires=['numpy', 'numba'],
       ext_modules=[lib],
       )
