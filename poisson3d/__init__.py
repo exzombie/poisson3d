@@ -290,9 +290,9 @@ class EwaldField(object):
            recompute_positions() to perform the computation with a set
            of charges."""
         NN = len(positions)
-        self._precomputed_positions = {'recip': [None]*NN,
-                                       'real pos': [None]*NN,
-                                       'real chg': [None]*NN}
+        self._precomputed_positions = {'recip': [None] * NN,
+                                       'real pos': [None] * NN,
+                                       'real chg': [None] * NN}
         for i, p in enumerate(positions):
             self._calc_real(p, i)
             self._calc_recip(p, i)
@@ -346,23 +346,24 @@ class EwaldFieldDirect_UNFINISHED:
         ew.klatt = lattice.reciprocal_lattice.matrix.copy()
         ew.volume = lattice.volume
 
-        ew.alpha = np.power(NP*PI*PI*PI*5.5/ew.volume/ew.volume, 1. / 6.)
-        ew.rcut = np.sqrt(-np.log(accuracy))/ew.alpha*1.2
-        ew.kcut = 2*ew.alpha*np.sqrt(-np.log(accuracy))*1.2
+        ew.alpha = np.power(NP * PI * PI * PI * 5.5 /
+                            ew.volume / ew.volume, 1. / 6.)
+        ew.rcut = np.sqrt(-np.log(accuracy)) / ew.alpha * 1.2
+        ew.kcut = 2 * ew.alpha * np.sqrt(-np.log(accuracy)) * 1.2
 
         # the shortest distances to respective surfaces
-        rd1 = np.fabs(ew.volume)/_norm(ew.klatt[0, :])
-        rd2 = np.fabs(ew.volume)/_norm(ew.klatt[1, :])
-        rd3 = np.fabs(ew.volume)/_norm(ew.klatt[2, :])
-        kd1 = 2*PI/_norm(ew.latt[0, :])
-        kd2 = 2*PI/_norm(ew.latt[1, :])
-        kd3 = 2*PI/_norm(ew.latt[2, :])
-        ew.max_n1 = int(np.ceil(ew.rcut/rd1))
-        ew.max_n2 = int(np.ceil(ew.rcut/rd2))
-        ew.max_n3 = int(np.ceil(ew.rcut/rd3))
-        ew.max_k1 = int(np.ceil(ew.kcut/kd1))
-        ew.max_k2 = int(np.ceil(ew.kcut/kd2))
-        ew.max_k3 = int(np.ceil(ew.kcut/kd3))
+        rd1 = np.fabs(ew.volume) / _norm(ew.klatt[0, :])
+        rd2 = np.fabs(ew.volume) / _norm(ew.klatt[1, :])
+        rd3 = np.fabs(ew.volume) / _norm(ew.klatt[2, :])
+        kd1 = 2 * PI / _norm(ew.latt[0, :])
+        kd2 = 2 * PI / _norm(ew.latt[1, :])
+        kd3 = 2 * PI / _norm(ew.latt[2, :])
+        ew.max_n1 = int(np.ceil(ew.rcut / rd1))
+        ew.max_n2 = int(np.ceil(ew.rcut / rd2))
+        ew.max_n3 = int(np.ceil(ew.rcut / rd3))
+        ew.max_k1 = int(np.ceil(ew.kcut / kd1))
+        ew.max_k2 = int(np.ceil(ew.kcut / kd2))
+        ew.max_k3 = int(np.ceil(ew.kcut / kd3))
 
         ew.s1 = frac_coords[:, 0].copy()
         ew.s2 = frac_coords[:, 1].copy()
@@ -434,37 +435,40 @@ class EwaldFieldDirect_UNFINISHED:
             ds3 = s3[j] - frac_coords[2]
 
             # real space lattice sum
-            for n1 in range(-max_n1, max_n1+1):
-                for n2 in range(-max_n2, max_n2+1):
-                    for n3 in range(-max_n3, max_n3+1):
-                        dx = (n1+ds1)*h11+(n2+ds2)*h21+(n3+ds3)*h31
-                        dy = (n1+ds1)*h12+(n2+ds2)*h22+(n3+ds3)*h32
-                        dz = (n1+ds1)*h13+(n2+ds2)*h23+(n3+ds3)*h33
-                        r2 = dx*dx + dy*dy + dz*dz
+            for n1 in range(-max_n1, max_n1 + 1):
+                for n2 in range(-max_n2, max_n2 + 1):
+                    for n3 in range(-max_n3, max_n3 + 1):
+                        dx = (n1 + ds1) * h11 + (n2 + ds2) * \
+                            h21 + (n3 + ds3) * h31
+                        dy = (n1 + ds1) * h12 + (n2 + ds2) * \
+                            h22 + (n3 + ds3) * h32
+                        dz = (n1 + ds1) * h13 + (n2 + ds2) * \
+                            h23 + (n3 + ds3) * h33
+                        r2 = dx * dx + dy * dy + dz * dz
                         if r2 < rcut * rcut:
                             r = np.sqrt(r2)
-                            pot += erfc(alpha*r)/r if r != 0. \
+                            pot += erfc(alpha * r) / r if r != 0. \
                                 else 0.0  # -2.*alpha/np.sqrt(np.pi)
 
             # reciprocal space lattice sum
-            for k1 in range(-max_k1, max_k1+1):
-                for k2 in range(-max_k2, max_k2+1):
-                    for k3 in range(-max_k3, max_k3+1):
+            for k1 in range(-max_k1, max_k1 + 1):
+                for k2 in range(-max_k2, max_k2 + 1):
+                    for k3 in range(-max_k3, max_k3 + 1):
                         if not ((k1 == 0) and (k2 == 0) and (k3 == 0)):
-                            dx = k1*g11 + k2*g21 + k3*g31
-                            dy = k1*g12 + k2*g22 + k3*g32
-                            dz = k1*g13 + k2*g23 + k3*g33
-                            r2 = dx*dx + dy*dy + dz*dz
+                            dx = k1 * g11 + k2 * g21 + k3 * g31
+                            dy = k1 * g12 + k2 * g22 + k3 * g32
+                            dz = k1 * g13 + k2 * g23 + k3 * g33
+                            r2 = dx * dx + dy * dy + dz * dz
                             # use inversion symmetry
                             # WTF!? TODO
-                            if r2 <= kcut*kcut:
-                                pot += 8.*np.pi/r2/volume * \
-                                    np.exp(-r2/alpha/alpha/4.) \
-                                    * np.cos(2*np.pi*(k1*ds1+k2*ds2+k3*ds3)) #\
-                                    #if k3 > 0 else \
-                                    #4.*np.pi/r2/volume * \
-                                    #np.exp(-r2/alpha/alpha/4.) \
-                                    #* np.cos(2*np.pi*(k1*ds1+k2*ds2+k3*ds3))
+                            if r2 <= kcut * kcut:
+                                pot += 8. * np.pi / r2 / volume * \
+                                    np.exp(-r2 / alpha / alpha / 4.) \
+                                    * np.cos(2 * np.pi * (k1 * ds1 + k2 * ds2 + k3 * ds3))  # \
+                                # if k3 > 0 else \
+                                # 4.*np.pi/r2/volume * \
+                                #np.exp(-r2/alpha/alpha/4.) \
+                                #* np.cos(2*np.pi*(k1*ds1+k2*ds2+k3*ds3))
 
             potential += charges[j] * pot
         jellium = np.pi / (volume * alpha * alpha) * \
@@ -562,7 +566,7 @@ def _test_poisson3d():
         poisson = Poisson3D(basis.matrix, grid)
         pot = p3d(grid)
         refpot = ewd(grid)
-        print((pot-refpot) / refpot)
+        print((pot - refpot) / refpot)
 
     print("""
     Running again with memoization enabled. Each run will be repeated
@@ -577,7 +581,8 @@ def _test_poisson3d():
             print(grid, end=' ', flush=True)
             pot = p3d(grid)
             refpot = ewd(grid)
-            print((pot-refpot) / refpot)
+            print((pot - refpot) / refpot)
+
 
 if __name__ == '__main__':
     _test_poisson3d()
