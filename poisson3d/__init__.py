@@ -349,11 +349,6 @@ def _test_poisson3d():
         # field-generating charges and isolated test charges)
         ewald = EwaldField(newstruct)
         refpotential = np.array([ewald.potential_at(p) for p in P])
-
-        # A hack to test the unfinished Direct method.
-        #ewald = EwaldFieldDirect(newstruct.lattice, newstruct.frac_coords, 1e-6)
-        #refpotential = np.array([ewald.potential_at(newstruct.lattice.get_fractional_coords(p), newstruct.site_properties['charge']) for p in P])
-
         return refpotential
 
     # Compute potential using Poisson3D.
