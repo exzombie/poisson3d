@@ -18,6 +18,13 @@ field = solver.solve(-charge_density / eps0)
 More information is available in doc strings while the maths are
 described in the `maths.html` document.
 
+## Installation
+
+Use `pip`. You need `numpy`, `scipy`, `pymatgen` and a C++ compiler.
+````bash
+pip install --user git+https://github.com/exzombie/poisson3d.git
+````
+
 ## Authors
 
 This package is written by Jure Varlec <jure.varlec@ki.si> and is
