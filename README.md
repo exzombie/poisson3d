@@ -28,4 +28,5 @@ pip install --user git+https://github.com/exzombie/poisson3d.git
 ## Authors
 
 This package is written by Jure Varlec <jure.varlec@ki.si> and is
-available under the MIT license.
+available under the GPL license, version 3 or (at your option) any
+later version.
