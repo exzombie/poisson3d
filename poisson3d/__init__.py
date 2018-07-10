@@ -3,12 +3,7 @@
 
 from __future__ import print_function
 
-import ctypes as ct
 import numpy as np
-from os.path import dirname, abspath
-from os import stat
-from subprocess import check_call
-import inspect
 import pymatgen as mg
 from numpy import pi, sqrt, log
 from math import erfc
